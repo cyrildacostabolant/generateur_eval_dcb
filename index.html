@@ -61,9 +61,10 @@
       .editor-content ol { list-style-type: decimal; padding-left: 1.5rem; }
       .editor-content p { margin-bottom: 0.75rem; line-height: 1.6; }
 
-      /* Dotted lines generator */
+      /* Lines generator (formerly dotted-lines) */
       .dotted-lines {
-        background-image: repeating-linear-gradient(transparent, transparent 29px, #e2e8f0 30px);
+        /* Lignes pleines de 2px (28px transparent + 2px couleur) */
+        background-image: repeating-linear-gradient(to bottom, transparent, transparent 28px, #94a3b8 28px, #94a3b8 30px);
         background-attachment: local;
         line-height: 30px;
       }
