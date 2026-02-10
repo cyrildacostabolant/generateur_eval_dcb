@@ -1,0 +1,5 @@
+{
+  "name": "Génération d'Evaluations Famille DCB",
+  "description": "Un générateur d'évaluations professionnel pour la Famille DCB avec export PDF, gestion des matières et vues spécifiques élève/professeur.",
+  "requestFramePermissions": []
+}
