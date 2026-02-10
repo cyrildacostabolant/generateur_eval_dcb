@@ -72,6 +72,18 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
     lineHeight: '1.4'
   };
 
+  // --- Utility: Contrast Color ---
+  const getContrastColor = (hexColor: string) => {
+    // Convert hex to RGB
+    const r = parseInt(hexColor.substr(1, 2), 16);
+    const g = parseInt(hexColor.substr(3, 2), 16);
+    const b = parseInt(hexColor.substr(5, 2), 16);
+    // Calculate YIQ ratio
+    const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+    // Return black for bright colors, white for dark colors
+    return yiq >= 128 ? 'black' : 'white';
+  };
+
   const handlePrint = () => {
     window.print();
   };
@@ -268,11 +280,11 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
           <React.Fragment key={section}>
             {/* Section Header Ghost */}
             <div className="mb-6" data-type="section" data-title={section} data-points={sectionPoints}>
-               <div className="mb-4 pb-2 border-b-2 flex justify-between items-end" style={{ borderColor: categoryColor }}>
-                  <h3 className="font-bold text-xl uppercase tracking-wider" style={{ color: categoryColor }}>
+               <div className="mb-4 pb-2 border-b-2 flex justify-between items-end" style={{ borderColor: '#dc2626' }}>
+                  <h3 className="font-bold text-xl uppercase tracking-wider" style={{ color: '#dc2626' }}>
                     {section}
                   </h3>
-                  <span className="font-bold text-sm mb-1" style={{ color: categoryColor }}>
+                  <span className="font-bold text-sm mb-1" style={{ color: '#dc2626' }}>
                     ({sectionPoints} {sectionPoints > 1 ? 'points' : 'point'})
                   </span>
                 </div>
@@ -329,7 +341,7 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
           <div key={page.pageNumber} className="a4-page bg-white shadow-2xl relative flex flex-col overflow-hidden">
             
             {/* Page Padding Container */}
-            <div className="flex-grow flex flex-col h-full" style={{ padding: `${PAGE_PADDING_MM}mm` }}>
+            <div className="flex-grow flex flex-col h-full" style={{ padding: `${PAGE_PADDING_MM}mm` }} >
               
               {/* En-tête (Uniquement Page 1) */}
               {page.pageNumber === 1 && (
@@ -341,8 +353,13 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
                       <div className="text-gray-300">..../..../....</div>
                     </div>
                     <div 
-                      className="w-[80%] flex items-center justify-center text-center px-4 font-bold text-xl uppercase tracking-wider text-white"
-                      style={{ backgroundColor: categoryColor, printColorAdjust: 'exact', WebkitPrintColorAdjust: 'exact' }}
+                      className="w-[80%] flex items-center justify-center text-center px-4 font-bold text-xl uppercase tracking-wider"
+                      style={{ 
+                        backgroundColor: categoryColor, 
+                        color: getContrastColor(categoryColor), // Dynamic text color
+                        printColorAdjust: 'exact', 
+                        WebkitPrintColorAdjust: 'exact' 
+                      }}
                     >
                       {evaluation.title}
                     </div>
@@ -367,11 +384,11 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
                   <div key={idx}>
                     {item.type === 'section' ? (
                       <div className="mb-6">
-                        <div className="mb-4 pb-2 border-b-2 flex justify-between items-end" style={{ borderColor: categoryColor }}>
-                          <h3 className="font-bold text-xl uppercase tracking-wider" style={{ color: categoryColor }}>
+                        <div className="mb-4 pb-2 border-b-2 flex justify-between items-end" style={{ borderColor: '#dc2626' }}>
+                          <h3 className="font-bold text-xl uppercase tracking-wider" style={{ color: '#dc2626' }}>
                             {item.data}
                           </h3>
-                          <span className="font-bold text-sm mb-1" style={{ color: categoryColor }}>
+                          <span className="font-bold text-sm mb-1" style={{ color: '#dc2626' }}>
                             ({item.points} {item.points !== undefined && item.points > 1 ? 'points' : 'point'})
                           </span>
                         </div>
