@@ -76,9 +76,13 @@
       /* Lines generator (formerly dotted-lines) */
       .dotted-lines {
         /* Lignes pleines de 2px (28px transparent + 2px couleur) */
-        background-image: repeating-linear-gradient(to bottom, transparent, transparent 28px, #94a3b8 28px, #94a3b8 30px);
+        /* Couleur passée à noir (#000000) pour l'impression */
+        background-image: repeating-linear-gradient(to bottom, transparent, transparent 28px, #000000 28px, #000000 30px);
         background-attachment: local;
         line-height: 30px;
+        /* Force l'impression des graphismes d'arrière-plan (essentiel pour les gradients CSS) */
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
       }
 
       .animate-fade-in {
@@ -127,3 +131,4 @@
     <div id="root"></div>
   </body>
 </html>
+    
