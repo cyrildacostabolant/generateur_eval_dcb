@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { Evaluation, Category, Question } from '../types';
 import { ArrowLeft, Printer } from 'lucide-react';
@@ -50,16 +49,17 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
   // Header Page 1 : 
   // Cadre haut (2cm) + Marge (0.5cm) + Cadre bas (3cm) + Marge mb-8 (32px)
   // (20mm + 5mm + 30mm) * 3.78 + 32px ≈ 208px + 32px = 240px.
-  // On arrondit large pour être sûr.
-  const HEADER_HEIGHT_P1 = 250; 
+  // Ajusté à 240 pour être au plus juste.
+  const HEADER_HEIGHT_P1 = 240; 
   
   // Footer : 
-  // Ligne de texte + padding top + border. ~40-50px.
-  const FOOTER_HEIGHT = 50; 
+  // Ligne de texte + padding top + border.
+  const FOOTER_HEIGHT = 40; 
   
   // Buffer de sécurité :
   // Espace vide forcé en bas de page pour s'assurer que le footer ne saute jamais.
-  const SAFETY_BUFFER = 80;
+  // Réduit à 10px pour maximiser l'espace.
+  const SAFETY_BUFFER = 10;
 
   // Hauteur disponible pour le contenu (Questions/Sections)
   const CONTENT_HEIGHT_P1 = PAGE_HEIGHT - PAGE_PADDING_Y - HEADER_HEIGHT_P1 - FOOTER_HEIGHT - SAFETY_BUFFER;
