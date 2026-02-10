@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Tab, Evaluation, Category } from './types';
 import { dataService } from './services/supabaseClient';
@@ -167,7 +166,7 @@ function App() {
   return (
     <div className="min-h-screen bg-[#fcfdff] text-slate-900 font-sans selection:bg-indigo-100 selection:text-indigo-700">
       {!previewData && (activeTab as string) !== 'editor' && (
-        <nav className="fixed left-0 top-0 h-full w-24 bg-white border-r border-slate-100 flex flex-col items-center py-10 z-20 shadow-sm">
+        <nav className="fixed left-0 top-0 h-full w-24 bg-white border-r border-slate-100 flex flex-col items-center py-10 z-20 shadow-sm print:hidden">
           <div className="mb-12 p-3 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-[22px] text-white shadow-lg shadow-indigo-200">
             <BookOpen size={28} />
           </div>
@@ -205,22 +204,25 @@ function App() {
         </nav>
       )}
 
-      <main className={`${!previewData && (activeTab as string) !== 'editor' ? 'pl-24' : ''} min-h-screen`}>
-        {activeTab === 'dashboard' && renderDashboard()}
-        
-        {activeTab === 'categories' && (
-          <div className="p-8">
-            <CategoryManager onBack={() => setActiveTab('dashboard')} />
-          </div>
-        )}
-        
-        {activeTab === 'editor' && (
-          <EvaluationEditor 
-            evaluationId={selectedEvalId} 
-            onClose={() => setActiveTab('dashboard')}
-            onPreview={requestPreview}
-          />
-        )}
+      <main className={`${!previewData && (activeTab as string) !== 'editor' ? 'pl-24' : ''} min-h-screen print:pl-0 print:min-h-0 print:h-auto`}>
+        {/* Wrapper pour masquer le contenu d'arrière-plan à l'impression */}
+        <div className="print:hidden">
+          {activeTab === 'dashboard' && renderDashboard()}
+          
+          {activeTab === 'categories' && (
+            <div className="p-8">
+              <CategoryManager onBack={() => setActiveTab('dashboard')} />
+            </div>
+          )}
+          
+          {activeTab === 'editor' && (
+            <EvaluationEditor 
+              evaluationId={selectedEvalId} 
+              onClose={() => setActiveTab('dashboard')}
+              onPreview={requestPreview}
+            />
+          )}
+        </div>
 
         {previewData && (
           <PdfPreview 
@@ -232,9 +234,9 @@ function App() {
         )}
       </main>
 
-      {/* Modal Backdrop Styling */}
+      {/* Modal Backdrop Styling - Hidden on print */}
       {previewModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 print:hidden">
           <div className="bg-white rounded-[32px] shadow-2xl max-w-lg w-full p-10 animate-fade-in relative">
             <button onClick={() => setPreviewModalOpen(null)} className="absolute top-6 right-6 p-2 text-slate-400 hover:bg-slate-100 rounded-full transition-colors">
               <X size={20} />
@@ -274,7 +276,7 @@ function App() {
       )}
 
       {deleteModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 print:hidden">
           <div className="bg-white rounded-[32px] shadow-2xl max-w-md w-full p-10 animate-fade-in text-center">
             <div className="w-20 h-20 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-6">
               <AlertTriangle size={40} />

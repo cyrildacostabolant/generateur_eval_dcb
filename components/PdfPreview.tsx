@@ -360,65 +360,57 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
              margin: 0;
           }
           
-          /* Cache tout le contenu de la page par défaut */
+          /* Reset body */
           body {
-            visibility: hidden;
             background: white;
+            margin: 0;
+            padding: 0;
           }
+          
+          /* Hide standard UI elements that might have been missed by App.tsx print:hidden */
+          .no-print { display: none !important; }
 
-          /* Force la visibilité du conteneur modal et de son contenu */
+          /* Ensure the modal root takes over */
           .pdf-modal-root {
-             visibility: visible !important;
-             position: absolute !important;
-             top: 0 !important;
-             left: 0 !important;
+             position: relative !important; 
              width: 100% !important;
              height: auto !important;
-             margin: 0 !important;
-             padding: 0 !important;
-             background: white !important;
              overflow: visible !important;
              z-index: 9999;
+             background: white;
+             top: 0 !important;
+             left: 0 !important;
           }
           
-          /* Cache spécifiquement la toolbar et le fond gris */
-          .no-print, .bg-gray-900 {
-             display: none !important;
-          }
-
-          /* Wrapper d'impression */
+          /* Ensure Wrapper displays blocks */
           .print-wrapper {
-             visibility: visible !important;
              display: block !important;
              width: 100% !important;
-             margin: 0 !important;
-             padding: 0 !important;
-             gap: 0 !important;
           }
           
-          /* Page A4 */
+          /* Page Styling */
           .a4-page {
-             visibility: visible !important;
              margin: 0 !important;
-             box-shadow: none !important;
              border: none !important;
-             break-after: page; 
+             box-shadow: none !important;
+             width: 210mm !important;
+             min-height: 296mm !important; /* Slightly less than 297 to avoid bottom edge spill */
+             padding: 1cm !important;
+             overflow: hidden !important; /* Clip overflow */
+             break-after: page;
              page-break-after: always;
-             width: 100% !important;
-             min-height: 297mm !important;
-             overflow: visible !important;
              print-color-adjust: exact;
              -webkit-print-color-adjust: exact;
-          }
-          
-          .a4-page:last-child {
-             break-after: auto;
-             page-break-after: auto;
           }
           
           /* Force la visibilité des enfants de la page */
           .a4-page * {
              visibility: visible !important;
+          }
+          
+          .a4-page:last-child {
+             break-after: auto;
+             page-break-after: auto;
           }
         }
       `}</style>
