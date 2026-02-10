@@ -233,7 +233,7 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
   const renderRealQuestion = (q: Question, dottedHeight?: number, points?: number) => (
     <div className="mb-6 pl-2">
       <div className="mb-3 text-blue-900 flex justify-between items-start gap-4">
-        <div className="measure-question-text flex-grow" style={contentStyle}>
+        <div className="measure-question-text flex-grow font-bold" style={contentStyle}>
           {q.question_text}
         </div>
         {points !== undefined && points > 0 && (
@@ -295,7 +295,7 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
               .map(q => (
                 <div key={q.id} data-type="question" data-id={q.id} data-has-prompt={!!q.student_prompt} data-points={q.points}>
                   <div className="mb-6 pl-2">
-                    <div className="mb-3 text-blue-900 measure-question-text" style={contentStyle}>
+                    <div className="mb-3 text-blue-900 font-bold measure-question-text" style={contentStyle}>
                         {q.question_text}
                     </div>
                     

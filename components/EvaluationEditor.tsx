@@ -236,7 +236,7 @@ const EvaluationEditor: React.FC<EvaluationEditorProps> = ({ evaluationId, onClo
                 <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-1">Consigne / Énoncé</label>
                 <textarea
                   ref={(el) => { textareaRefs.current[idx] = el; }}
-                  className="w-full p-4 bg-slate-50/50 border-2 border-slate-100 rounded-2xl focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-500/20 focus:bg-white outline-none overflow-hidden min-h-[80px] font-medium text-blue-900 transition-all leading-relaxed resize-none"
+                  className="w-full p-4 bg-slate-50/50 border-2 border-slate-100 rounded-2xl focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-500/20 focus:bg-white outline-none overflow-hidden min-h-[80px] font-bold text-blue-900 transition-all leading-relaxed resize-none"
                   placeholder="Tapez ici l'énoncé complet..."
                   value={q.question_text}
                   rows={2}
