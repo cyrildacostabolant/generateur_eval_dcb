@@ -1,5 +1,6 @@
+
 import React, { useRef, useEffect, useState } from 'react';
-import { Bold, Italic, List, Image as ImageIcon, Heading1, Check, X } from 'lucide-react';
+import { Bold, Italic, List, Image as ImageIcon, Heading1, Check, X, AlignLeft, AlignCenter, AlignRight, Maximize2 } from 'lucide-react';
 
 interface RichTextEditorProps {
   value: string;
@@ -12,11 +13,20 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
   const contentRef = useRef<HTMLDivElement>(null);
   const [showUrlInput, setShowUrlInput] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
+  
+  // État pour la gestion de l'image sélectionnée
+  const [selectedImg, setSelectedImg] = useState<HTMLImageElement | null>(null);
+  const [imgWidth, setImgWidth] = useState<number>(100);
 
   // Sync value to innerHTML when value changes externally
   useEffect(() => {
     if (contentRef.current && contentRef.current.innerHTML !== value) {
-      contentRef.current.innerHTML = value || '';
+      // Attention : ceci réinitialise le curseur si on tape trop vite, 
+      // mais nécessaire pour la synchronisation initiale ou externe.
+      // On vérifie une égalité simple pour éviter les boucles.
+      if (contentRef.current.innerHTML !== value) {
+        contentRef.current.innerHTML = value || '';
+      }
     }
   }, [value]);
 
@@ -36,21 +46,83 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
 
   const handleImageInsert = () => {
     if (imageUrl) {
-      execCmd('insertImage', imageUrl);
+      // On insère l'image avec un style par défaut safe
+      const html = `<img src="${imageUrl}" style="display: block; margin: 10px auto; width: 50%;" />`;
+      execCmd('insertHTML', html);
       setImageUrl('');
       setShowUrlInput(false);
     }
   };
 
+  // --- Gestion de la sélection d'image ---
+
+  // Détecter le clic sur une image
+  const handleContentClick = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'IMG') {
+      // Désélectionner l'ancienne si différente
+      if (selectedImg && selectedImg !== target) {
+        selectedImg.classList.remove('editor-image-selected');
+      }
+      
+      const img = target as HTMLImageElement;
+      img.classList.add('editor-image-selected');
+      setSelectedImg(img);
+
+      // Récupérer la largeur actuelle (style inline ou attribut ou 100%)
+      const currentStyleWidth = img.style.width;
+      if (currentStyleWidth && currentStyleWidth.includes('%')) {
+        setImgWidth(parseInt(currentStyleWidth));
+      } else {
+        setImgWidth(100);
+      }
+    } else {
+      // Clic ailleurs : désélectionner
+      if (selectedImg) {
+        selectedImg.classList.remove('editor-image-selected');
+        setSelectedImg(null);
+      }
+    }
+  };
+
+  // Mettre à jour le style de l'image sélectionnée
+  const updateImageStyle = (styles: Partial<CSSStyleDeclaration>) => {
+    if (selectedImg) {
+      // Appliquer les styles
+      Object.assign(selectedImg.style, styles);
+      // Déclencher la sauvegarde
+      handleInput();
+    }
+  };
+
+  const setImageAlignment = (align: 'left' | 'center' | 'right') => {
+    if (!selectedImg) return;
+    
+    // On utilise display block + margins pour l'alignement PDF robuste
+    if (align === 'left') {
+      updateImageStyle({ display: 'block', margin: '10px auto 10px 0' });
+    } else if (align === 'center') {
+      updateImageStyle({ display: 'block', margin: '10px auto' });
+    } else if (align === 'right') {
+      updateImageStyle({ display: 'block', margin: '10px 0 10px auto' });
+    }
+  };
+
+  const handleWidthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newWidth = parseInt(e.target.value);
+    setImgWidth(newWidth);
+    updateImageStyle({ width: `${newWidth}%` });
+  };
+
   return (
     <div className={`border rounded-md overflow-hidden bg-white ${className}`}>
-      {/* Toolbar */}
-      <div className="flex items-center gap-1 bg-gray-50 p-2 border-b flex-wrap">
+      {/* Toolbar Standard */}
+      <div className="flex items-center gap-1 bg-gray-50 p-2 border-b flex-wrap relative">
         <button
           onClick={() => execCmd('bold')}
           className="p-1.5 hover:bg-gray-200 rounded text-gray-700"
           type="button"
-          title="Bold"
+          title="Gras"
         >
           <Bold size={16} />
         </button>
@@ -58,7 +130,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
           onClick={() => execCmd('italic')}
           className="p-1.5 hover:bg-gray-200 rounded text-gray-700"
           type="button"
-          title="Italic"
+          title="Italique"
         >
           <Italic size={16} />
         </button>
@@ -67,7 +139,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
           onClick={() => execCmd('insertUnorderedList')}
           className="p-1.5 hover:bg-gray-200 rounded text-gray-700"
           type="button"
-          title="List"
+          title="Liste à puces"
         >
           <List size={16} />
         </button>
@@ -75,7 +147,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
           onClick={() => execCmd('formatBlock', '<h2>')}
           className="p-1.5 hover:bg-gray-200 rounded text-gray-700"
           type="button"
-          title="Heading"
+          title="Titre"
         >
           <Heading1 size={16} />
         </button>
@@ -87,37 +159,73 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
             onClick={() => setShowUrlInput(!showUrlInput)}
             className={`p-1.5 rounded text-gray-700 ${showUrlInput ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-200'}`}
             type="button"
-            title="Insert Image"
+            title="Insérer une image"
           >
             <ImageIcon size={16} />
           </button>
           
           {showUrlInput && (
-            <div className="flex items-center gap-1 bg-white border rounded p-0.5 ml-1 shadow-sm animate-fade-in">
+            <div className="flex items-center gap-1 bg-white border rounded p-0.5 ml-1 shadow-sm animate-fade-in absolute left-2 top-10 z-10 p-2">
               <input 
                 type="text" 
                 value={imageUrl}
                 onChange={(e) => setImageUrl(e.target.value)}
-                placeholder="URL de l'image"
-                className="text-xs p-1 outline-none w-32 md:w-48"
+                placeholder="URL de l'image (https://...)"
+                className="text-xs p-1 border rounded outline-none w-48"
                 autoFocus
                 onKeyDown={(e) => e.key === 'Enter' && handleImageInsert()}
               />
               <button 
                 onClick={handleImageInsert}
                 className="p-1 hover:bg-green-100 text-green-600 rounded"
+                title="Valider"
               >
                 <Check size={14} />
               </button>
               <button 
                 onClick={() => { setShowUrlInput(false); setImageUrl(''); }}
                 className="p-1 hover:bg-red-100 text-red-500 rounded"
+                title="Annuler"
               >
                 <X size={14} />
               </button>
             </div>
           )}
         </div>
+
+        {/* --- Toolbar Image (Contextuelle) --- */}
+        {selectedImg && (
+          <div className="flex items-center gap-2 ml-auto bg-indigo-50 px-2 py-0.5 rounded-lg border border-indigo-100 animate-fade-in">
+            <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wide mr-1">Image</span>
+            
+            <div className="flex items-center gap-0.5 border-r border-indigo-200 pr-2 mr-2">
+              <button onClick={() => setImageAlignment('left')} className="p-1 hover:bg-indigo-200 rounded text-indigo-600" title="Aligner à gauche">
+                <AlignLeft size={14} />
+              </button>
+              <button onClick={() => setImageAlignment('center')} className="p-1 hover:bg-indigo-200 rounded text-indigo-600" title="Centrer">
+                <AlignCenter size={14} />
+              </button>
+              <button onClick={() => setImageAlignment('right')} className="p-1 hover:bg-indigo-200 rounded text-indigo-600" title="Aligner à droite">
+                <AlignRight size={14} />
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Maximize2 size={12} className="text-indigo-400" />
+              <input 
+                type="range" 
+                min="10" 
+                max="100" 
+                step="5"
+                value={imgWidth}
+                onChange={handleWidthChange}
+                className="w-20 h-1 bg-indigo-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                title={`Taille : ${imgWidth}%`}
+              />
+              <span className="text-[10px] font-mono text-indigo-600 w-8">{imgWidth}%</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Editor Area */}
@@ -127,6 +235,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
         contentEditable
         onInput={handleInput}
         onBlur={handleInput}
+        onClick={handleContentClick}
         data-placeholder={placeholder}
       />
     </div>
