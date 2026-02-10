@@ -50,11 +50,11 @@
 
       /* Editor Styles */
       .editor-content img {
-        border-radius: 8px;
+        border-radius: 0px; /* Coins carrés */
         max-width: 100%;
         height: auto;
         /* display et margin retirés ici pour permettre l'inline style via l'éditeur */
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.1);
         cursor: pointer; /* Indique qu'on peut cliquer pour éditer */
         transition: outline 0.1s;
       }
@@ -65,8 +65,8 @@
 
       /* Classe ajoutée dynamiquement par l'éditeur pour montrer la sélection */
       .editor-image-selected {
-        outline: 3px solid #6366f1; /* Indigo-500 */
-        outline-offset: 2px;
+        outline: 1px solid black; /* Cadre noir 1px */
+        outline-offset: 0px;      /* Collé à l'image */
       }
 
       .editor-content ul { list-style-type: disc; padding-left: 1.5rem; }
