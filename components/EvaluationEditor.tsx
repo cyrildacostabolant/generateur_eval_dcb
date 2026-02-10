@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Category, Evaluation, Question } from '../types';
 import { dataService } from '../services/supabaseClient';
 import RichTextEditor from './RichTextEditor';
-import { Plus, Trash2, ArrowLeft, GripVertical, FileText, CheckCircle, AlertCircle, X, Sparkles, Layout } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, GripVertical, FileText, CheckCircle, AlertCircle, X, Sparkles, Layout, Layers } from 'lucide-react';
 
 interface EvaluationEditorProps {
   evaluationId?: string | null;
@@ -49,9 +49,13 @@ const EvaluationEditor: React.FC<EvaluationEditorProps> = ({ evaluationId, onClo
   }, [notification]);
 
   const addQuestion = () => {
+    // Récupérer la section de la dernière question pour l'héritage
+    const lastQuestion = evaluation.questions[evaluation.questions.length - 1];
+    const inheritedSection = lastQuestion ? lastQuestion.section_name : 'Exercice 1';
+
     const newQ: Question = {
       id: crypto.randomUUID(),
-      section_name: `Exercice ${evaluation.questions.length + 1}`,
+      section_name: inheritedSection,
       question_text: '',
       teacher_answer: '',
       student_prompt: null,
@@ -177,13 +181,19 @@ const EvaluationEditor: React.FC<EvaluationEditorProps> = ({ evaluationId, onClo
                   <span className="w-8 h-8 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-xs font-black text-indigo-600 shadow-sm">
                     {idx + 1}
                   </span>
-                  <input
-                    type="text"
-                    value={q.section_name}
-                    onChange={(e) => updateQuestion(idx, 'section_name', e.target.value)}
-                    className="bg-transparent font-black text-slate-800 outline-none focus:text-indigo-600 text-lg transition-colors"
-                    placeholder="Titre de la section"
-                  />
+                  
+                  {/* Section Name Input */}
+                  <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-slate-200 focus-within:border-indigo-300 transition-colors">
+                    <Layers size={14} className="text-slate-400" />
+                    <input
+                      type="text"
+                      value={q.section_name}
+                      onChange={(e) => updateQuestion(idx, 'section_name', e.target.value)}
+                      className="bg-transparent font-bold text-slate-700 outline-none text-sm w-48 placeholder:text-slate-300"
+                      placeholder="Nom de la section (ex: Exercice 1)"
+                      title="Nom de la section / Exercice"
+                    />
+                  </div>
                 </div>
               </div>
               <button onClick={() => removeQuestion(idx)} className="p-3 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-2xl transition-all">
@@ -263,7 +273,7 @@ const EvaluationEditor: React.FC<EvaluationEditorProps> = ({ evaluationId, onClo
           <div className="p-4 bg-slate-50 text-slate-300 group-hover:bg-indigo-100 group-hover:text-indigo-600 rounded-2xl transition-all">
             <Plus size={32} />
           </div>
-          <span className="text-xl font-black uppercase tracking-[0.2em]">Ajouter une section</span>
+          <span className="text-xl font-black uppercase tracking-[0.2em]">Ajouter une question</span>
         </button>
       </div>
     </div>

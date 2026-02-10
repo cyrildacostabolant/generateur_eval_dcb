@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Evaluation, Category } from '../types';
 import { ArrowLeft, Printer } from 'lucide-react';
@@ -39,6 +40,9 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
     return totalLines * 30;
   };
 
+  // Récupérer la liste des sections uniques dans l'ordre d'apparition
+  const sections = Array.from(new Set(evaluation.questions.map(q => q.section_name || 'Autre')));
+
   return (
     <div className="fixed inset-0 bg-gray-900 bg-opacity-90 z-50 overflow-y-auto flex flex-col items-center">
       {/* Toolbar - Hidden when printing */}
@@ -53,7 +57,7 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
           onClick={handlePrint}
           className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2 shadow-sm transition-colors"
         >
-          <Printer size={18} /> Imprimer / PDF
+          <Printer size={18} /> Imprimer
         </button>
       </div>
 
@@ -88,49 +92,59 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
             </div>
           </div>
 
-          {/* CONTENT */}
+          {/* CONTENT - GROUPED BY SECTIONS */}
           <div className="px-[1cm] flex-grow">
-            {evaluation.questions.map((q, idx) => (
-              <div key={q.id} className="mb-6 break-inside-avoid" style={{ pageBreakInside: 'avoid' }}>
-                <div className="flex gap-2 items-baseline mb-2">
-                  <h3 className="font-bold text-lg underline decoration-2 underline-offset-2" style={{ textDecorationColor: categoryColor }}>
-                    {q.section_name}
+            {sections.map(section => (
+              <div key={section} className="mb-8 break-inside-avoid" style={{ pageBreakInside: 'avoid' }}>
+                
+                {/* Section Header */}
+                <div className="mb-4 pb-2 border-b-2" style={{ borderColor: categoryColor }}>
+                  <h3 className="font-bold text-xl uppercase tracking-wider" style={{ color: categoryColor }}>
+                    {section}
                   </h3>
                 </div>
 
-                <div className="mb-4 text-blue-900 font-medium text-base">
-                   {q.question_text}
-                </div>
+                {/* Questions in this section */}
+                {evaluation.questions
+                  .filter(q => (q.section_name || 'Autre') === section)
+                  .map((q) => (
+                    <div key={q.id} className="mb-6 pl-2">
+                      <div className="mb-3 text-slate-800 font-medium text-base">
+                         {q.question_text}
+                      </div>
 
-                {/* Answer Area */}
-                <div className="pl-4">
-                  {mode === 'teacher' ? (
-                    <div className="p-4 bg-green-50 border-l-4 border-green-500 text-green-900 editor-content"
-                         style={{ printColorAdjust: 'exact', WebkitPrintColorAdjust: 'exact' }}
-                         dangerouslySetInnerHTML={{ __html: q.teacher_answer }} 
-                    />
-                  ) : (
-                    // Student Mode
-                    <>
-                      {q.student_prompt ? (
-                         <div className="editor-content" dangerouslySetInnerHTML={{ __html: q.student_prompt }} />
-                      ) : (
-                        // Espace de réponse proportionnel
-                        <div 
-                          className="w-full dotted-lines border-b border-gray-300" 
-                          style={{ height: `${getDottedLinesHeight(q.teacher_answer)}px` }}
-                        ></div>
-                      )}
-                    </>
-                  )}
-                </div>
+                      {/* Answer Area */}
+                      <div className="pl-2">
+                        {mode === 'teacher' ? (
+                          <div className="p-4 bg-green-50 border-l-4 border-green-500 text-green-900 editor-content rounded-r-lg"
+                               style={{ printColorAdjust: 'exact', WebkitPrintColorAdjust: 'exact' }}
+                               dangerouslySetInnerHTML={{ __html: q.teacher_answer }} 
+                          />
+                        ) : (
+                          // Student Mode
+                          <>
+                            {q.student_prompt ? (
+                               <div className="editor-content" dangerouslySetInnerHTML={{ __html: q.student_prompt }} />
+                            ) : (
+                              // Espace de réponse proportionnel
+                              <div 
+                                className="w-full dotted-lines" 
+                                style={{ height: `${getDottedLinesHeight(q.teacher_answer)}px` }}
+                              ></div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </div>
+                ))}
               </div>
             ))}
           </div>
 
           {/* Footer Pagination */}
-          <div className="mt-auto p-[1cm] pt-4 text-right text-xs text-gray-400 border-t border-gray-100 mx-[1cm]">
-            EvalGen Pro &bull; {evaluation.title}
+          <div className="mt-auto p-[1cm] pt-4 flex justify-between items-center text-xs text-gray-400 border-t border-gray-100 mx-[1cm]">
+            <span className="font-bold uppercase tracking-wider">{evaluation.title}</span>
+            <span>Page 1</span>
           </div>
         </div>
       </div>
