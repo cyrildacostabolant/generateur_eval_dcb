@@ -230,7 +230,11 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
   }, [evaluation, mode]);
 
   // Rendu FINAL d'une question
-  const renderRealQuestion = (q: Question, dottedHeight?: number, points?: number) => (
+  const renderRealQuestion = (q: Question, dottedHeight?: number, points?: number) => {
+    // Calcul du nombre de lignes de 30px à afficher
+    const numberOfLines = dottedHeight ? Math.floor(dottedHeight / 30) : 1;
+
+    return (
     <div className="mb-6 pl-2">
       <div className="mb-3 text-blue-900 flex justify-between items-start gap-4">
         <div className="measure-question-text flex-grow font-bold" style={contentStyle}>
@@ -253,16 +257,23 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
             {q.student_prompt ? (
                <div className="editor-content" style={contentStyle} dangerouslySetInnerHTML={{ __html: q.student_prompt }} />
             ) : (
-              <div 
-                className="w-full dotted-lines" 
-                style={{ height: `${dottedHeight || 30}px` }}
-              ></div>
+              // Utilisation de vraies bordures HTML (border-bottom) au lieu d'un gradient CSS pour garantir l'impression
+              <div className="w-full flex flex-col">
+                {Array.from({ length: Math.max(1, numberOfLines) }).map((_, i) => (
+                  <div 
+                    key={i} 
+                    className="w-full border-b border-black" 
+                    style={{ height: '30px', flexShrink: 0 }}
+                  ></div>
+                ))}
+              </div>
             )}
           </>
         )}
       </div>
     </div>
-  );
+    );
+  };
 
   return (
     <div className="fixed inset-0 bg-gray-900 bg-opacity-90 z-50 overflow-y-auto flex flex-col items-center pdf-modal-root">
