@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import { Category, Evaluation } from '../types';
 
@@ -58,7 +59,8 @@ let MOCK_EVALUATIONS: Evaluation[] = [
         question_text: 'Résoudre l\'équation suivante : 2x + 4 = 10',
         teacher_answer: '<p>2x = 6 <br> <strong>x = 3</strong></p>',
         student_prompt: null,
-        order_index: 0
+        order_index: 0,
+        points: 3
       },
       {
         id: 'q2',
@@ -66,7 +68,8 @@ let MOCK_EVALUATIONS: Evaluation[] = [
         question_text: 'Calculer l\'aire d\'un carré de côté 5cm.',
         teacher_answer: '<p>Aire = c x c = 5 x 5 = <strong>25 cm²</strong></p>',
         student_prompt: '<p>Formule : A = ...</p>',
-        order_index: 1
+        order_index: 1,
+        points: 2
       }
     ]
   }
@@ -162,7 +165,8 @@ export const dataService = {
           question_text: q.question_text,
           teacher_answer: q.teacher_answer,
           student_prompt: q.student_prompt,
-          order_index: idx
+          order_index: idx,
+          points: q.points || 2
         }));
 
         const { error: qError } = await supabase.from('questions').insert(questionsToInsert);

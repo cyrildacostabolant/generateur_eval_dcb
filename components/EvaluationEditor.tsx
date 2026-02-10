@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Category, Evaluation, Question } from '../types';
 import { dataService } from '../services/supabaseClient';
 import RichTextEditor from './RichTextEditor';
-import { Plus, Trash2, ArrowLeft, GripVertical, FileText, CheckCircle, AlertCircle, X, Sparkles, Layout, Layers } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, GripVertical, FileText, CheckCircle, AlertCircle, X, Sparkles, Layout, Layers, Calculator } from 'lucide-react';
 
 interface EvaluationEditorProps {
   evaluationId?: string | null;
@@ -31,7 +31,13 @@ const EvaluationEditor: React.FC<EvaluationEditorProps> = ({ evaluationId, onClo
         const allEvals = await dataService.getEvaluations();
         const found = allEvals.find(e => e.id === evaluationId);
         if (found) {
-          setEvaluation(JSON.parse(JSON.stringify(found)));
+          // Assurer la rétrocompatibilité si 'points' n'existe pas
+          const safeEval = JSON.parse(JSON.stringify(found));
+          safeEval.questions = safeEval.questions.map((q: any) => ({
+             ...q,
+             points: q.points ?? 2
+          }));
+          setEvaluation(safeEval);
         }
       } else if (cats.length > 0) {
         setEvaluation(prev => ({ ...prev, category_id: cats[0].id }));
@@ -59,7 +65,8 @@ const EvaluationEditor: React.FC<EvaluationEditorProps> = ({ evaluationId, onClo
       question_text: '',
       teacher_answer: '',
       student_prompt: null,
-      order_index: evaluation.questions.length
+      order_index: evaluation.questions.length,
+      points: 2 // Défaut 2 points
     };
     setEvaluation(prev => ({ ...prev, questions: [...prev.questions, newQ] }));
   };
@@ -174,10 +181,10 @@ const EvaluationEditor: React.FC<EvaluationEditorProps> = ({ evaluationId, onClo
       <div className="space-y-8">
         {evaluation.questions.map((q, idx) => (
           <div key={q.id} className="bg-white rounded-[40px] shadow-sm border border-slate-100 overflow-hidden group hover:border-indigo-100 transition-colors animate-fade-in">
-            <div className="bg-slate-50/50 p-6 border-b border-slate-100 flex justify-between items-center">
-              <div className="flex items-center gap-4">
+            <div className="bg-slate-50/50 p-6 border-b border-slate-100 flex justify-between items-center flex-wrap gap-4">
+              <div className="flex items-center gap-4 flex-grow">
                 <GripVertical className="text-slate-300 cursor-grab hover:text-indigo-400 transition-colors" size={20} />
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
                   <span className="w-8 h-8 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-xs font-black text-indigo-600 shadow-sm">
                     {idx + 1}
                   </span>
@@ -190,9 +197,24 @@ const EvaluationEditor: React.FC<EvaluationEditorProps> = ({ evaluationId, onClo
                       value={q.section_name}
                       onChange={(e) => updateQuestion(idx, 'section_name', e.target.value)}
                       className="bg-transparent font-bold text-slate-700 outline-none text-sm w-48 placeholder:text-slate-300"
-                      placeholder="Nom de la section (ex: Exercice 1)"
+                      placeholder="Nom de la section"
                       title="Nom de la section / Exercice"
                     />
+                  </div>
+
+                  {/* Points Input */}
+                  <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-slate-200 focus-within:border-amber-300 transition-colors ml-2">
+                    <Calculator size={14} className="text-slate-400" />
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.5"
+                      value={q.points || 0}
+                      onChange={(e) => updateQuestion(idx, 'points', parseFloat(e.target.value))}
+                      className="bg-transparent font-bold text-slate-700 outline-none text-sm w-12 text-center"
+                      title="Points"
+                    />
+                    <span className="text-xs text-slate-400 font-bold">pts</span>
                   </div>
                 </div>
               </div>

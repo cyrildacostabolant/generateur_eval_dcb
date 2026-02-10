@@ -1,3 +1,4 @@
+
 -- Enable UUID extension
 create extension if not exists "uuid-ossp";
 
@@ -27,7 +28,8 @@ create table questions (
   question_text text not null,
   teacher_answer text, -- HTML Rich Text
   student_prompt text, -- HTML Rich Text or NULL
-  order_index integer default 0
+  order_index integer default 0,
+  points numeric default 2
 );
 
 -- 4. Storage Bucket Policy (SQL to create bucket not always supported in raw SQL editor, usually done via UI)

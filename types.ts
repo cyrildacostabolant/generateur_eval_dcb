@@ -1,3 +1,4 @@
+
 export interface Category {
   id: string;
   name: string;
@@ -13,6 +14,7 @@ export interface Question {
   teacher_answer: string; // HTML/Rich Text
   student_prompt: string | null; // HTML or null for dotted lines
   order_index: number;
+  points: number;
 }
 
 export interface Evaluation {

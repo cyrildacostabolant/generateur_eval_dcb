@@ -1,3 +1,5 @@
+
+
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { Evaluation, Category, Question } from '../types';
 import { ArrowLeft, Printer } from 'lucide-react';
@@ -17,6 +19,7 @@ interface PageItem {
   data: any;
   height: number;
   dottedLinesHeight?: number; // Hauteur calculée pour le mode élève
+  points?: number; // Pour l'affichage des points
 }
 
 interface Page {
@@ -74,7 +77,14 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
   };
 
   // Liste des sections
-  const sections = Array.from(new Set(evaluation.questions.map(q => q.section_name || 'Autre')));
+  const sections: string[] = Array.from(new Set(evaluation.questions.map(q => q.section_name || 'Autre')));
+
+  // Fonction utilitaire pour calculer le total des points d'une section
+  const getSectionPoints = (sectionName: string) => {
+    return evaluation.questions
+      .filter(q => (q.section_name || 'Autre') === sectionName)
+      .reduce((acc, curr) => acc + (curr.points || 0), 0);
+  };
 
   // Algorithme de pagination et mesure
   useLayoutEffect(() => {
@@ -134,15 +144,18 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
       let itemHeight = 0;
       let dottedH = 0;
       let itemData: any = null;
+      let itemPoints = 0;
 
       // 1. Récupération des données et calcul de hauteur de l'élément courant
       if (type === 'section') {
         itemData = el.dataset.title;
+        itemPoints = parseFloat(el.dataset.points || '0');
         // Hauteur de la section (mb-6 = 24px + border + text)
         itemHeight = el.offsetHeight + 24; 
       } else {
         const qId = el.dataset.id;
         itemData = evaluation.questions.find(q => q.id === qId);
+        itemPoints = parseFloat(el.dataset.points || '0');
         const metrics = calculateQuestionMetrics(el);
         itemHeight = metrics.finalHeight;
         dottedH = metrics.calculatedDottedHeight;
@@ -186,7 +199,8 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
         type,
         data: itemData,
         height: itemHeight,
-        dottedLinesHeight: dottedH
+        dottedLinesHeight: dottedH,
+        points: itemPoints
       });
       currentHeight += itemHeight;
     }
@@ -204,10 +218,17 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
   }, [evaluation, mode]);
 
   // Rendu FINAL d'une question
-  const renderRealQuestion = (q: Question, dottedHeight?: number) => (
+  const renderRealQuestion = (q: Question, dottedHeight?: number, points?: number) => (
     <div className="mb-6 pl-2">
-      <div className="mb-3 text-slate-900 measure-question-text" style={contentStyle}>
-        {q.question_text}
+      <div className="mb-3 text-slate-900 flex justify-between items-start gap-4">
+        <div className="measure-question-text flex-grow" style={contentStyle}>
+          {q.question_text}
+        </div>
+        {points !== undefined && points > 0 && (
+           <div className="font-bold text-slate-400 text-sm whitespace-nowrap pt-1">
+             / {points}
+           </div>
+        )}
       </div>
       <div className="pl-2">
         {mode === 'teacher' ? (
@@ -241,21 +262,26 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
         className="absolute top-0 left-0 -z-50 opacity-0 pointer-events-none bg-white no-print"
         style={{ width: '210mm', padding: `0 ${PAGE_PADDING_MM}mm` }}
       >
-        {sections.map(section => (
+        {sections.map(section => {
+          const sectionPoints = getSectionPoints(section);
+          return (
           <React.Fragment key={section}>
             {/* Section Header Ghost */}
-            <div className="mb-6" data-type="section" data-title={section}>
-               <div className="mb-4 pb-2 border-b-2" style={{ borderColor: categoryColor }}>
+            <div className="mb-6" data-type="section" data-title={section} data-points={sectionPoints}>
+               <div className="mb-4 pb-2 border-b-2 flex justify-between items-end" style={{ borderColor: categoryColor }}>
                   <h3 className="font-bold text-xl uppercase tracking-wider" style={{ color: categoryColor }}>
                     {section}
                   </h3>
+                  <span className="font-bold text-sm mb-1" style={{ color: categoryColor }}>
+                    ({sectionPoints} {sectionPoints > 1 ? 'points' : 'point'})
+                  </span>
                 </div>
             </div>
             {/* Questions Ghost */}
             {evaluation.questions
               .filter(q => (q.section_name || 'Autre') === section)
               .map(q => (
-                <div key={q.id} data-type="question" data-id={q.id} data-has-prompt={!!q.student_prompt}>
+                <div key={q.id} data-type="question" data-id={q.id} data-has-prompt={!!q.student_prompt} data-points={q.points}>
                   <div className="mb-6 pl-2">
                     <div className="mb-3 text-slate-900 measure-question-text" style={contentStyle}>
                         {q.question_text}
@@ -276,7 +302,7 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
               ))
             }
           </React.Fragment>
-        ))}
+        )})}
       </div>
 
 
@@ -341,14 +367,17 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
                   <div key={idx}>
                     {item.type === 'section' ? (
                       <div className="mb-6">
-                        <div className="mb-4 pb-2 border-b-2" style={{ borderColor: categoryColor }}>
+                        <div className="mb-4 pb-2 border-b-2 flex justify-between items-end" style={{ borderColor: categoryColor }}>
                           <h3 className="font-bold text-xl uppercase tracking-wider" style={{ color: categoryColor }}>
                             {item.data}
                           </h3>
+                          <span className="font-bold text-sm mb-1" style={{ color: categoryColor }}>
+                            ({item.points} {item.points !== undefined && item.points > 1 ? 'points' : 'point'})
+                          </span>
                         </div>
                       </div>
                     ) : (
-                      renderRealQuestion(item.data, item.dottedLinesHeight)
+                      renderRealQuestion(item.data, item.dottedLinesHeight, item.points)
                     )}
                   </div>
                 ))}
