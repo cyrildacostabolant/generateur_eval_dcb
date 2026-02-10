@@ -220,13 +220,13 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
   );
 
   return (
-    <div className="fixed inset-0 bg-gray-900 bg-opacity-90 z-50 overflow-y-auto flex flex-col items-center">
+    <div className="fixed inset-0 bg-gray-900 bg-opacity-90 z-50 overflow-y-auto flex flex-col items-center pdf-modal-root">
       
       {/* --- GHOST CONTAINER (Pour mesure) --- */}
       {/* IMPORTANT : Doit avoir les mêmes styles de police que le rendu final pour que les calculs soient justes */}
       <div 
         ref={measureContainerRef} 
-        className="absolute top-0 left-0 -z-50 opacity-0 pointer-events-none bg-white"
+        className="absolute top-0 left-0 -z-50 opacity-0 pointer-events-none bg-white no-print"
         style={{ width: '210mm', padding: '0 1cm' }}
       >
         {sections.map(section => (
@@ -360,53 +360,65 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
              margin: 0;
           }
           
+          /* Cache tout le contenu de la page par défaut */
           body {
+            visibility: hidden;
             background: white;
-            overflow: visible !important;
-          }
-          
-          /* Cache tout le body sauf notre wrapper d'impression */
-          body > *:not(.fixed) { /* Astuce: le modal est fixed, on veut cibler le contenu print */
-             display: none;
           }
 
-          /* Le conteneur principal du modal */
-          .fixed {
-             position: static !important;
+          /* Force la visibilité du conteneur modal et de son contenu */
+          .pdf-modal-root {
+             visibility: visible !important;
+             position: absolute !important;
+             top: 0 !important;
+             left: 0 !important;
+             width: 100% !important;
+             height: auto !important;
+             margin: 0 !important;
+             padding: 0 !important;
              background: white !important;
              overflow: visible !important;
-             height: auto !important;
-             display: block !important;
+             z-index: 9999;
           }
-
-          /* Masquer la toolbar et le fond gris */
-          .bg-gray-900, .no-print {
+          
+          /* Cache spécifiquement la toolbar et le fond gris */
+          .no-print, .bg-gray-900 {
              display: none !important;
           }
 
-          /* Layout des pages en impression */
+          /* Wrapper d'impression */
           .print-wrapper {
+             visibility: visible !important;
+             display: block !important;
+             width: 100% !important;
+             margin: 0 !important;
              padding: 0 !important;
              gap: 0 !important;
-             display: block !important;
           }
-
+          
+          /* Page A4 */
           .a4-page {
+             visibility: visible !important;
              margin: 0 !important;
              box-shadow: none !important;
              border: none !important;
-             /* Force le saut de page après chaque div A4 */
              break-after: page; 
              page-break-after: always;
              width: 100% !important;
-             height: 297mm !important; /* Force la hauteur A4 */
-             overflow: hidden !important;
+             min-height: 297mm !important;
+             overflow: visible !important;
+             print-color-adjust: exact;
+             -webkit-print-color-adjust: exact;
           }
           
-          /* Evite une page blanche à la fin */
           .a4-page:last-child {
              break-after: auto;
              page-break-after: auto;
+          }
+          
+          /* Force la visibilité des enfants de la page */
+          .a4-page * {
+             visibility: visible !important;
           }
         }
       `}</style>
