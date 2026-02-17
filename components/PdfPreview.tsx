@@ -39,48 +39,34 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
   const PAGE_HEIGHT = 1123; 
   
   // Marges de la page (padding) : 10mm ≈ 38px
-  // On réduit les marges pour laisser plus de place au contenu
   const PAGE_PADDING_MM = 10;
   const PIXELS_PER_MM = 3.78;
   const PAGE_PADDING_Y = Math.ceil(PAGE_PADDING_MM * 2 * PIXELS_PER_MM); // Haut + Bas (~76px)
 
   // Hauteurs réservées (Header / Footer)
-  
-  // Header Page 1 : 
-  // Cadre haut (2cm) + Marge (0.5cm) + Cadre bas (3cm) + Marge mb-8 (32px)
-  // (20mm + 5mm + 30mm) * 3.78 + 32px ≈ 208px + 32px = 240px.
-  // Ajusté à 240 pour être au plus juste.
   const HEADER_HEIGHT_P1 = 240; 
-  
-  // Footer : 
-  // Ligne de texte + padding top + border.
-  const FOOTER_HEIGHT = 40; 
+  const FOOTER_HEIGHT = 50; // Augmenté de 40 à 50
   
   // Buffer de sécurité :
-  // Espace vide forcé en bas de page pour s'assurer que le footer ne saute jamais.
-  // Réduit à 10px pour maximiser l'espace.
-  const SAFETY_BUFFER = 10;
+  // On augmente significativement pour éviter les troncatures sur les imprimantes avec marges physiques.
+  const SAFETY_BUFFER = 45; // Augmenté de 10 à 45
 
   // Hauteur disponible pour le contenu (Questions/Sections)
   const CONTENT_HEIGHT_P1 = PAGE_HEIGHT - PAGE_PADDING_Y - HEADER_HEIGHT_P1 - FOOTER_HEIGHT - SAFETY_BUFFER;
   const CONTENT_HEIGHT_PN = PAGE_HEIGHT - PAGE_PADDING_Y - FOOTER_HEIGHT - SAFETY_BUFFER;
 
-  // Style commun pour le texte (Arial 14)
+  // Style commun pour le texte
   const contentStyle = {
     fontFamily: 'Arial, sans-serif',
-    fontSize: '13pt', // Légèrement réduit pour gagner de la place (vs 14pt)
+    fontSize: '13pt',
     lineHeight: '1.4'
   };
 
-  // --- Utility: Contrast Color ---
   const getContrastColor = (hexColor: string) => {
-    // Convert hex to RGB
     const r = parseInt(hexColor.substr(1, 2), 16);
     const g = parseInt(hexColor.substr(3, 2), 16);
     const b = parseInt(hexColor.substr(5, 2), 16);
-    // Calculate YIQ ratio
     const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
-    // Return black for bright colors, white for dark colors
     return yiq >= 128 ? 'black' : 'white';
   };
 
@@ -88,17 +74,14 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
     window.print();
   };
 
-  // Liste des sections
   const sections: string[] = Array.from(new Set(evaluation.questions.map(q => q.section_name || 'Autre')));
 
-  // Fonction utilitaire pour calculer le total des points d'une section
   const getSectionPoints = (sectionName: string) => {
     return evaluation.questions
       .filter(q => (q.section_name || 'Autre') === sectionName)
       .reduce((acc, curr) => acc + (curr.points || 0), 0);
   };
 
-  // Algorithme de pagination et mesure
   useLayoutEffect(() => {
     if (!measureContainerRef.current) return;
 
@@ -107,30 +90,22 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
     let currentHeight = 0;
     let pageIndex = 1;
     
-    // Déterminer la limite de la page actuelle
     let maxPageHeight = CONTENT_HEIGHT_P1;
 
-    // Récupérer tous les éléments mesurés du DOM fantôme
     const elements = Array.from(measureContainerRef.current.children) as HTMLElement[];
     
-    // Fonction utilitaire pour calculer la hauteur réelle d'un élément question
     const calculateQuestionMetrics = (el: HTMLElement) => {
-      // Hauteur du texte de la question (avec marges incluses dans le rendu ou ajoutées ici)
       const qTextEl = el.querySelector('.measure-question-text') as HTMLElement;
       const qTextHeight = qTextEl ? qTextEl.offsetHeight : 0;
       
-      // Hauteur de la réponse prof (pour référence)
       const tAnswerEl = el.querySelector('.measure-teacher-answer') as HTMLElement;
       const tAnswerHeight = tAnswerEl ? tAnswerEl.offsetHeight : 0;
       
-      // Calcul des lignes pointillées : Hauteur Prof / 30px (arrondi sup)
       const linesCount = Math.ceil(tAnswerHeight / 30); 
       const calculatedDottedHeight = Math.max(1, linesCount) * 30;
 
-      // Hauteur totale selon le mode
-      // On ajoute les marges (mb-6 = 24px)
       const wrapperMargin = 24; 
-      const internalGap = 12; // mb-3
+      const internalGap = 12;
 
       let finalHeight = 0;
       if (mode === 'teacher') {
@@ -140,7 +115,6 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
         if (isStudentPrompt) {
              finalHeight = el.offsetHeight + wrapperMargin;
         } else {
-            // Hauteur texte + gap + lignes + marge wrapper
             finalHeight = qTextHeight + internalGap + calculatedDottedHeight + wrapperMargin;
         }
       }
@@ -148,7 +122,6 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
       return { finalHeight, calculatedDottedHeight };
     };
 
-    // Boucle principale de pagination
     for (let i = 0; i < elements.length; i++) {
       const el = elements[i];
       const type = el.dataset.type as PageItemType;
@@ -158,11 +131,9 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
       let itemData: any = null;
       let itemPoints = 0;
 
-      // 1. Récupération des données et calcul de hauteur de l'élément courant
       if (type === 'section') {
         itemData = el.dataset.title;
         itemPoints = parseFloat(el.dataset.points || '0');
-        // Hauteur de la section (mb-6 = 24px + border + text)
         itemHeight = el.offsetHeight + 24; 
       } else {
         const qId = el.dataset.id;
@@ -173,28 +144,23 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
         dottedH = metrics.calculatedDottedHeight;
       }
 
-      // 2. Logique "Keep With Next" pour les Sections
       let forceBreak = false;
       if (type === 'section') {
         const nextEl = elements[i + 1];
         if (nextEl && nextEl.dataset.type === 'question') {
           const nextMetrics = calculateQuestionMetrics(nextEl);
-          // Si Hauteur courante + Section + Question > Max => Saut de page
           if (currentHeight + itemHeight + nextMetrics.finalHeight > maxPageHeight) {
             forceBreak = true;
           }
         } else if (currentHeight + itemHeight > maxPageHeight) {
-             // Section seule en bas de page
              forceBreak = true;
         }
       } else {
-        // Pour une question normale
         if (currentHeight + itemHeight > maxPageHeight) {
            forceBreak = true;
         }
       }
 
-      // 3. Changement de page si nécessaire
       if (forceBreak && currentPageItems.length > 0) {
         computedPages.push({
           pageNumber: pageIndex,
@@ -206,7 +172,6 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
         maxPageHeight = CONTENT_HEIGHT_PN;
       }
 
-      // 4. Ajout de l'item
       currentPageItems.push({
         type,
         data: itemData,
@@ -217,7 +182,6 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
       currentHeight += itemHeight;
     }
 
-    // Pousser la dernière page
     if (currentPageItems.length > 0) {
       computedPages.push({
         pageNumber: pageIndex,
@@ -229,9 +193,7 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
     setIsMeasuring(false);
   }, [evaluation, mode]);
 
-  // Rendu FINAL d'une question
   const renderRealQuestion = (q: Question, dottedHeight?: number, points?: number) => {
-    // Calcul du nombre de lignes de 30px à afficher
     const numberOfLines = dottedHeight ? Math.floor(dottedHeight / 30) : 1;
 
     return (
@@ -257,7 +219,6 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
             {q.student_prompt ? (
                <div className="editor-content" style={contentStyle} dangerouslySetInnerHTML={{ __html: q.student_prompt }} />
             ) : (
-              // Utilisation de vraies bordures HTML (border-bottom) au lieu d'un gradient CSS pour garantir l'impression
               <div className="w-full flex flex-col">
                 {Array.from({ length: Math.max(1, numberOfLines) }).map((_, i) => (
                   <div 
@@ -278,8 +239,7 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
   return (
     <div className="fixed inset-0 bg-gray-900 bg-opacity-90 z-50 overflow-y-auto flex flex-col items-center pdf-modal-root">
       
-      {/* --- GHOST CONTAINER (Pour mesure) --- */}
-      {/* Les dimensions (width/padding) DOIVENT être identiques à la page réelle */}
+      {/* --- GHOST CONTAINER --- */}
       <div 
         ref={measureContainerRef} 
         className="absolute top-0 left-0 -z-50 opacity-0 pointer-events-none bg-white no-print"
@@ -289,7 +249,6 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
           const sectionPoints = getSectionPoints(section);
           return (
           <React.Fragment key={section}>
-            {/* Section Header Ghost */}
             <div className="mb-6" data-type="section" data-title={section} data-points={sectionPoints}>
                <div className="mb-4 pb-2 border-b-2 flex justify-between items-end" style={{ borderColor: '#dc2626' }}>
                   <h3 className="font-bold text-xl uppercase tracking-wider" style={{ color: '#dc2626' }}>
@@ -300,7 +259,6 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
                   </span>
                 </div>
             </div>
-            {/* Questions Ghost */}
             {evaluation.questions
               .filter(q => (q.section_name || 'Autre') === section)
               .map(q => (
@@ -309,7 +267,6 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
                     <div className="mb-3 text-blue-900 font-bold measure-question-text" style={contentStyle}>
                         {q.question_text}
                     </div>
-                    
                     <div className="pl-2">
                          {q.student_prompt ? (
                             <div className="editor-content" style={contentStyle} dangerouslySetInnerHTML={{ __html: q.student_prompt }} />
@@ -328,7 +285,6 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
         )})}
       </div>
 
-
       {/* Toolbar */}
       <div className="w-full bg-white p-4 shadow-md sticky top-0 z-10 flex justify-between items-center no-print">
         <div className="flex items-center gap-4">
@@ -346,18 +302,13 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
         </button>
       </div>
 
-      {/* --- REAL RENDER (Pages paginées) --- */}
+      {/* --- REAL RENDER --- */}
       <div className="py-8 w-full flex flex-col items-center gap-8 print-wrapper">
         {!isMeasuring && pages.map((page) => (
           <div key={page.pageNumber} className="a4-page bg-white shadow-2xl relative flex flex-col overflow-hidden">
-            
-            {/* Page Padding Container */}
             <div className="flex-grow flex flex-col h-full" style={{ padding: `${PAGE_PADDING_MM}mm` }} >
-              
-              {/* En-tête (Uniquement Page 1) */}
               {page.pageNumber === 1 && (
                 <div className="mb-8">
-                  {/* Top Frame */}
                   <div className="h-[2cm] flex border-2 border-black mb-[0.5cm] overflow-hidden">
                     <div className="w-[20%] border-r-2 border-black flex flex-col justify-center items-center p-2">
                       <span className="text-[10px] text-gray-500 uppercase">Date</span>
@@ -367,7 +318,7 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
                       className="w-[80%] flex items-center justify-center text-center px-4 font-bold text-xl uppercase tracking-wider"
                       style={{ 
                         backgroundColor: categoryColor, 
-                        color: getContrastColor(categoryColor), // Dynamic text color
+                        color: getContrastColor(categoryColor),
                         printColorAdjust: 'exact', 
                         WebkitPrintColorAdjust: 'exact' 
                       }}
@@ -375,8 +326,6 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
                       {evaluation.title}
                     </div>
                   </div>
-
-                  {/* Bottom Frame */}
                   <div className="h-[3cm] flex border-2 border-black">
                     <div className="w-[80%] border-r-2 border-black p-2 relative">
                       <span className="text-[10px] text-gray-500 uppercase absolute top-1 left-2">Commentaires</span>
@@ -389,7 +338,6 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
                 </div>
               )}
 
-              {/* Contenu de la page */}
               <div className="flex-grow">
                 {page.items.map((item, idx) => (
                   <div key={idx}>
@@ -411,8 +359,7 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
                 ))}
               </div>
 
-              {/* Footer Pagination */}
-              <div className="mt-auto pt-4 flex justify-between items-center text-xs text-gray-400 border-t border-gray-100">
+              <div className="mt-auto pt-4 flex justify-between items-center text-[10px] text-gray-400 border-t border-gray-100">
                 <span className="font-bold uppercase tracking-wider truncate max-w-[70%]">{evaluation.title}</span>
                 <span>Page {page.pageNumber} / {pages.length}</span>
               </div>
@@ -429,20 +376,20 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
           }
           
           body {
-            background: white;
-            margin: 0;
-            padding: 0;
+            background: white !important;
+            margin: 0 !important;
+            padding: 0 !important;
           }
           
           .no-print { display: none !important; }
 
           .pdf-modal-root {
-             position: relative !important; 
+             position: absolute !important; 
              width: 100% !important;
              height: auto !important;
              overflow: visible !important;
              z-index: 9999;
-             background: white;
+             background: white !important;
              top: 0 !important;
              left: 0 !important;
           }
@@ -459,14 +406,14 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
              border: none !important;
              box-shadow: none !important;
              width: 210mm !important;
-             /* 296mm pour éviter les micro-débordements sur une page 297mm */
-             min-height: 296mm !important; 
-             height: 296mm !important;
+             height: 297mm !important;
+             min-height: 297mm !important;
              overflow: hidden !important;
              break-after: page;
              page-break-after: always;
              print-color-adjust: exact;
              -webkit-print-color-adjust: exact;
+             box-sizing: border-box;
           }
           
           .a4-page * {
