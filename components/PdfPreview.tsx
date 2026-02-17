@@ -34,17 +34,18 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
   const measureContainerRef = useRef<HTMLDivElement>(null);
 
   // --- CONSTANTES DE DIMENSIONS ---
-  const PAGE_HEIGHT = 1123; // A4 à 96 DPI
-  const PAGE_PADDING_MM = 10;
-  const PIXELS_PER_MM = 3.78;
-  const PAGE_PADDING_Y = Math.ceil(PAGE_PADDING_MM * 2 * PIXELS_PER_MM); 
+  // A4 à 96 DPI = 794px x 1123px
+  const PAGE_HEIGHT = 1123; 
+  const PAGE_PADDING_PX = 38; // 10mm env.
 
-  const HEADER_HEIGHT_P1 = 240; 
-  const FOOTER_HEIGHT = 70; // Augmenté de 50 à 70 pour plus de sécurité
-  const SAFETY_BUFFER = 70; // Augmenté de 45 à 70 pour éviter tout débordement sur la marge physique
+  const HEADER_HEIGHT_P1 = 230; 
+  const FOOTER_HEIGHT = 60; 
+  // Buffer de sécurité réduit de 70 à 35 pour regagner de l'espace
+  // Tout en gardant une marge pour éviter les débordements réels
+  const SAFETY_BUFFER = 35; 
 
-  const CONTENT_HEIGHT_P1 = PAGE_HEIGHT - PAGE_PADDING_Y - HEADER_HEIGHT_P1 - FOOTER_HEIGHT - SAFETY_BUFFER;
-  const CONTENT_HEIGHT_PN = PAGE_HEIGHT - PAGE_PADDING_Y - FOOTER_HEIGHT - SAFETY_BUFFER;
+  const CONTENT_HEIGHT_P1 = PAGE_HEIGHT - (PAGE_PADDING_PX * 2) - HEADER_HEIGHT_P1 - FOOTER_HEIGHT - SAFETY_BUFFER;
+  const CONTENT_HEIGHT_PN = PAGE_HEIGHT - (PAGE_PADDING_PX * 2) - FOOTER_HEIGHT - SAFETY_BUFFER;
 
   const contentStyle = {
     fontFamily: 'Arial, sans-serif',
@@ -61,10 +62,14 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
   };
 
   const handlePrint = () => {
-    // Petit délai pour laisser le cycle de rendu mobile se stabiliser
-    setTimeout(() => {
-      window.print();
-    }, 150);
+    // Sur Chrome Android, l'appel doit être direct ou via un court délai
+    // On s'assure aussi de ne pas être dans un état de scroll bloqué
+    if (typeof window !== 'undefined') {
+      window.focus();
+      setTimeout(() => {
+        window.print();
+      }, 250);
+    }
   };
 
   const sections: string[] = Array.from(new Set(evaluation.questions.map(q => q.section_name || 'Autre')));
@@ -78,7 +83,6 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
   useLayoutEffect(() => {
     if (!measureContainerRef.current) return;
 
-    // Petite pause pour s'assurer que les images ou polices sont bien là avant la mesure
     const timer = setTimeout(() => {
       const computedPages: Page[] = [];
       let currentPageItems: PageItem[] = [];
@@ -93,11 +97,12 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
         const qTextHeight = qTextEl ? qTextEl.offsetHeight : 0;
         const tAnswerEl = el.querySelector('.measure-teacher-answer') as HTMLElement;
         const tAnswerHeight = tAnswerEl ? tAnswerEl.offsetHeight : 0;
+        
         const linesCount = Math.ceil(tAnswerHeight / 30); 
         const calculatedDottedHeight = Math.max(1, linesCount) * 30;
 
-        const wrapperMargin = 24; 
-        const internalGap = 12;
+        const wrapperMargin = 20; // Réduit de 24 à 20
+        const internalGap = 10;
 
         let finalHeight = 0;
         if (mode === 'teacher') {
@@ -125,7 +130,7 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
         if (type === 'section') {
           itemData = el.dataset.title;
           itemPoints = parseFloat(el.dataset.points || '0');
-          itemHeight = el.offsetHeight + 24; 
+          itemHeight = el.offsetHeight + 20; 
         } else {
           const qId = el.dataset.id;
           itemData = evaluation.questions.find(q => q.id === qId);
@@ -135,12 +140,8 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
           dottedH = metrics.calculatedDottedHeight;
         }
 
-        let forceBreak = false;
-        if (currentHeight + itemHeight > maxPageHeight) {
-           forceBreak = true;
-        }
-
-        if (forceBreak && currentPageItems.length > 0) {
+        // Si l'élément dépasse la hauteur max, on change de page
+        if (currentHeight + itemHeight > maxPageHeight && currentPageItems.length > 0) {
           computedPages.push({ pageNumber: pageIndex, items: currentPageItems });
           pageIndex++;
           currentPageItems = [];
@@ -160,7 +161,7 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
 
       setPages(computedPages);
       setIsMeasuring(false);
-    }, 200);
+    }, 300);
 
     return () => clearTimeout(timer);
   }, [evaluation, mode]);
@@ -168,8 +169,8 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
   const renderRealQuestion = (q: Question, dottedHeight?: number, points?: number) => {
     const numberOfLines = dottedHeight ? Math.floor(dottedHeight / 30) : 1;
     return (
-    <div className="mb-6 pl-2">
-      <div className="mb-3 text-blue-900 flex justify-between items-start gap-4">
+    <div className="mb-5 pl-2 page-item-container">
+      <div className="mb-2 text-blue-900 flex justify-between items-start gap-4">
         <div className="measure-question-text flex-grow font-bold" style={contentStyle}>
           {q.question_text}
         </div>
@@ -179,7 +180,7 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
       </div>
       <div className="pl-2">
         {mode === 'teacher' ? (
-          <div className="p-4 bg-green-50 border-l-4 border-green-500 text-green-900 editor-content rounded-r-lg"
+          <div className="p-3 bg-green-50 border-l-4 border-green-500 text-green-900 editor-content rounded-r-lg"
                style={contentStyle} dangerouslySetInnerHTML={{ __html: q.teacher_answer }} />
         ) : (
           <>
@@ -206,7 +207,7 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
       <div 
         ref={measureContainerRef} 
         className="absolute top-0 left-0 -z-50 opacity-0 pointer-events-none bg-white no-print"
-        style={{ width: '210mm', padding: `0 ${PAGE_PADDING_MM}mm` }}
+        style={{ width: '210mm', padding: '10mm' }}
       >
         {sections.map(section => {
           const sectionPoints = getSectionPoints(section);
@@ -234,18 +235,19 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
       </div>
 
       {/* Toolbar */}
-      <div className="w-full bg-white p-4 shadow-md sticky top-0 z-10 flex justify-between items-center no-print">
+      <div className="w-full bg-white p-4 shadow-md sticky top-0 z-[60] flex justify-between items-center no-print">
         <div className="flex items-center gap-4">
-          <button onClick={onClose} className="text-gray-600 hover:text-black flex items-center gap-2">
+          <button onClick={onClose} className="text-gray-600 hover:text-black flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-gray-100 transition-colors">
             <ArrowLeft size={20} /> <span className="hidden sm:inline">Retour</span>
           </button>
           <h2 className="font-bold text-lg truncate max-w-[150px] sm:max-w-none">
-            {isMeasuring ? 'Calcul...' : mode === 'teacher' ? 'Aperçu Professeur' : 'Aperçu Élève'}
+            {isMeasuring ? 'Préparation...' : mode === 'teacher' ? 'Aperçu Professeur' : 'Aperçu Élève'}
           </h2>
         </div>
         <button
           onClick={handlePrint}
-          className={`bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2 shadow-sm transition-colors ${isMeasuring ? 'opacity-50 cursor-not-allowed' : ''}`}
+          disabled={isMeasuring}
+          className={`bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2 shadow-sm transition-all ${isMeasuring ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
         >
           <Printer size={18} /> Imprimer
         </button>
@@ -255,11 +257,11 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
       <div className="py-8 w-full flex flex-col items-center gap-8 print-wrapper">
         {!isMeasuring && pages.map((page) => (
           <div key={page.pageNumber} className="a4-page bg-white shadow-2xl relative flex flex-col overflow-hidden box-border">
-            <div className="flex flex-col h-full box-border" style={{ padding: `${PAGE_PADDING_MM}mm` }} >
+            <div className="flex flex-col h-full box-border relative" style={{ padding: '10mm' }} >
               
               {/* Header P1 */}
               {page.pageNumber === 1 && (
-                <div className="mb-8" style={{ height: `${HEADER_HEIGHT_P1}px`, flexShrink: 0 }}>
+                <div className="mb-6" style={{ height: `${HEADER_HEIGHT_P1}px`, flexShrink: 0 }}>
                   <div className="h-[2cm] flex border-2 border-black mb-[0.5cm] overflow-hidden">
                     <div className="w-[20%] border-r-2 border-black flex flex-col justify-center items-center p-2">
                       <span className="text-[10px] text-gray-500 uppercase">Date</span>
@@ -278,12 +280,12 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
               )}
 
               {/* Main Content Area */}
-              <div className="flex-grow overflow-hidden" style={{ maxHeight: page.pageNumber === 1 ? `${CONTENT_HEIGHT_P1 + SAFETY_BUFFER}px` : `${CONTENT_HEIGHT_PN + SAFETY_BUFFER}px` }}>
+              <div className="flex-grow overflow-hidden">
                 {page.items.map((item, idx) => (
                   <div key={idx}>
                     {item.type === 'section' ? (
-                      <div className="mb-6">
-                        <div className="mb-4 pb-2 border-b-2 flex justify-between items-end" style={{ borderColor: '#dc2626' }}>
+                      <div className="mb-5">
+                        <div className="mb-3 pb-1 border-b-2 flex justify-between items-end" style={{ borderColor: '#dc2626' }}>
                           <h3 className="font-bold text-xl uppercase tracking-wider" style={{ color: '#dc2626' }}>{item.data}</h3>
                           <span className="font-bold text-sm mb-1" style={{ color: '#dc2626' }}>({item.points} pts)</span>
                         </div>
@@ -295,8 +297,8 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
                 ))}
               </div>
 
-              {/* Footer avec hauteur fixe pour éviter le chevauchement */}
-              <div className="mt-auto border-t border-gray-100 flex justify-between items-center text-[10px] text-gray-400" style={{ height: `${FOOTER_HEIGHT}px`, flexShrink: 0 }}>
+              {/* Footer avec position absolue en bas de la zone padding pour éviter l'écrasement */}
+              <div className="border-t border-gray-100 flex justify-between items-center text-[10px] text-gray-400 mt-2" style={{ height: `${FOOTER_HEIGHT}px`, flexShrink: 0 }}>
                 <span className="font-bold uppercase tracking-wider truncate max-w-[70%]">{evaluation.title}</span>
                 <span>Page {page.pageNumber} / {pages.length}</span>
               </div>
@@ -306,25 +308,56 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
       </div>
 
       <style>{`
+        @media screen {
+          .a4-page {
+            width: 210mm;
+            height: 297mm;
+            min-height: 297mm;
+          }
+        }
+        
         @media print {
           @page { size: A4; margin: 0; }
-          body { background: white !important; margin: 0 !important; padding: 0 !important; }
+          body { 
+            background: white !important; 
+            margin: 0 !important; 
+            padding: 0 !important;
+            overflow: visible !important;
+          }
           .no-print { display: none !important; }
           .pdf-modal-root {
              position: absolute !important; 
              width: 100% !important;
+             height: auto !important;
              overflow: visible !important;
              z-index: 9999;
              background: white !important;
              top: 0 !important; left: 0 !important;
           }
-          .print-wrapper { display: block !important; width: 100% !important; padding: 0 !important; margin: 0 !important; }
+          .print-wrapper { 
+            display: block !important; 
+            width: 100% !important; 
+            padding: 0 !important; 
+            margin: 0 !important; 
+          }
           .a4-page {
-             margin: 0 !important; border: none !important; box-shadow: none !important;
-             width: 210mm !important; height: 297mm !important; min-height: 297mm !important;
-             overflow: hidden !important; break-after: page; page-break-after: always;
-             print-color-adjust: exact; -webkit-print-color-adjust: exact;
+             margin: 0 !important; 
+             border: none !important; 
+             box-shadow: none !important;
+             width: 210mm !important; 
+             height: 297mm !important; 
+             min-height: 297mm !important;
+             max-height: 297mm !important;
+             overflow: hidden !important; 
+             break-after: page; 
+             page-break-after: always;
+             print-color-adjust: exact; 
+             -webkit-print-color-adjust: exact;
              box-sizing: border-box !important;
+          }
+          .page-item-container {
+             page-break-inside: avoid;
+             break-inside: avoid;
           }
         }
       `}</style>
