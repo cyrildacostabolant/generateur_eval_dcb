@@ -200,7 +200,9 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
                document.body.appendChild(tempDiv);
                const h = tempDiv.offsetHeight;
                document.body.removeChild(tempDiv);
-               const lines = Math.max(1, Math.ceil(h / 30));
+               
+               // On ajoute la ligne supplémentaire (+ 1) comme demandé pour le confort d'écriture
+               const lines = Math.max(1, Math.ceil(h / 30) + 1);
                const dottedH = lines * 30;
 
                return (
@@ -217,7 +219,7 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
                              <div className="editor-content" style={contentStyle} dangerouslySetInnerHTML={{ __html: q.student_prompt }} />
                           ) : (
                             <div className="measure-dotted-area w-full flex flex-col" style={{ height: `${dottedH}px` }}>
-                               {/* Espace pour les lignes */}
+                               {/* Espace exact pour les lignes pointillées */}
                             </div>
                           )}
                         </>
@@ -238,7 +240,7 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
             <ArrowLeft size={20} /> <span className="hidden sm:inline font-bold">Retour</span>
           </button>
           <h2 className="font-black text-lg text-slate-800">
-            {isMeasuring ? 'Optimisation du remplissage...' : mode === 'teacher' ? 'Version Professeur' : 'Version Élève'}
+            {isMeasuring ? 'Mise en page...' : mode === 'teacher' ? 'Version Professeur' : 'Version Élève'}
           </h2>
         </div>
         <button
