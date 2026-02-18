@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { Evaluation, Category, Question } from '../types';
 import { ArrowLeft, Printer } from 'lucide-react';
@@ -32,13 +31,13 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
   const measureContainerRef = useRef<HTMLDivElement>(null);
 
   // --- CONSTANTES DE DIMENSIONS ---
-  const PAGE_HEIGHT = 1123; // A4 96 DPI
+  const PAGE_HEIGHT = 1123; // A4 à 96 DPI
   const PAGE_PADDING_PX = 38; // 10mm
   const FOOTER_HEIGHT = 38; // 10mm (1cm)
-  const HEADER_HEIGHT_P1 = 230; 
+  const HEADER_HEIGHT_P1 = 205; // En-tête page 1 compacté
   
-  // Buffer réduit au minimum pour coller au pied de page
-  const SAFETY_BUFFER = 10; 
+  // Buffer de sécurité minimal pour coller au pied de page
+  const SAFETY_BUFFER = 5; 
 
   const CONTENT_HEIGHT_P1 = PAGE_HEIGHT - (PAGE_PADDING_PX * 2) - HEADER_HEIGHT_P1 - FOOTER_HEIGHT - SAFETY_BUFFER;
   const CONTENT_HEIGHT_PN = PAGE_HEIGHT - (PAGE_PADDING_PX * 2) - FOOTER_HEIGHT - SAFETY_BUFFER;
@@ -89,11 +88,12 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
         const tAnswerEl = el.querySelector('.measure-teacher-answer') as HTMLElement;
         const tAnswerHeight = tAnswerEl ? tAnswerEl.offsetHeight : 0;
         
+        // Calcul identique à l'affichage réel
         const linesCount = Math.ceil(tAnswerHeight / 30); 
         const calculatedDottedHeight = Math.max(1, linesCount) * 30;
 
-        const wrapperMargin = 16; // Correspond à mb-4 (16px)
-        const internalGap = 8;    // Correspond à mb-2 (8px)
+        const wrapperMargin = 12; // mb-3 (12px)
+        const internalGap = 8;    // mb-2 (8px)
 
         let finalHeight = 0;
         if (mode === 'teacher') {
@@ -121,7 +121,7 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
         if (type === 'section') {
           itemData = el.dataset.title;
           itemPoints = parseFloat(el.dataset.points || '0');
-          itemHeight = el.offsetHeight + 16; // Correspond à mb-4
+          itemHeight = el.offsetHeight + 12; // mb-3
         } else {
           const qId = el.dataset.id;
           itemData = evaluation.questions.find(q => q.id === qId);
@@ -131,6 +131,7 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
           dottedH = metrics.calculatedDottedHeight;
         }
 
+        // Si l'élément dépasse la hauteur max disponible sur la page
         if (currentHeight + itemHeight > maxPageHeight && currentPageItems.length > 0) {
           computedPages.push({ pageNumber: pageIndex, items: currentPageItems });
           pageIndex++;
@@ -159,7 +160,7 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
   const renderRealQuestion = (q: Question, dottedHeight?: number, points?: number) => {
     const numberOfLines = dottedHeight ? Math.floor(dottedHeight / 30) : 1;
     return (
-    <div className="mb-4 pl-2 page-item-container">
+    <div className="mb-3 pl-2 page-item-container">
       <div className="mb-2 text-blue-900 flex justify-between items-start gap-4">
         <div className="measure-question-text flex-grow font-bold" style={contentStyle}>
           {q.question_text}
@@ -193,7 +194,7 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
   return (
     <div className="fixed inset-0 bg-gray-900 bg-opacity-90 z-50 overflow-y-auto flex flex-col items-center pdf-modal-root">
       
-      {/* Ghost measuring container - MUST MATCH REAL STYLES EXACTLY */}
+      {/* Conteneur de mesure fantôme - Doit être identique au rendu final */}
       <div 
         ref={measureContainerRef} 
         className="absolute top-0 left-0 -z-50 opacity-0 pointer-events-none bg-white no-print"
@@ -203,7 +204,7 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
           const sectionPoints = getSectionPoints(section);
           return (
           <React.Fragment key={section}>
-            <div className="mb-4" data-type="section" data-title={section} data-points={sectionPoints}>
+            <div className="mb-3" data-type="section" data-title={section} data-points={sectionPoints}>
                <div className="pb-1 border-b-2 flex justify-between items-end" style={{ borderColor: '#dc2626' }}>
                   <h3 className="font-bold text-lg uppercase tracking-wider" style={{ color: '#dc2626' }}>{section}</h3>
                   <span className="font-bold text-sm mb-1" style={{ color: '#dc2626' }}>({sectionPoints} pts)</span>
@@ -211,7 +212,7 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
             </div>
             {evaluation.questions.filter(q => (q.section_name || 'Autre') === section).map(q => (
               <div key={q.id} data-type="question" data-id={q.id} data-has-prompt={!!q.student_prompt} data-points={q.points}>
-                <div className="mb-4 pl-2">
+                <div className="mb-3 pl-2">
                   <div className="mb-2 text-blue-900 font-bold measure-question-text" style={contentStyle}>{q.question_text}</div>
                   <div className="pl-2">
                        <div className="p-3 bg-green-50 border-l-4 border-green-500 text-green-900 editor-content rounded-r-lg measure-teacher-answer"
@@ -231,7 +232,7 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
             <ArrowLeft size={20} /> <span className="hidden sm:inline font-bold">Retour</span>
           </button>
           <h2 className="font-black text-lg text-slate-800">
-            {isMeasuring ? 'Mise en page...' : mode === 'teacher' ? 'Version Professeur' : 'Version Élève'}
+            {isMeasuring ? 'Optimisation...' : mode === 'teacher' ? 'Version Professeur' : 'Version Élève'}
           </h2>
         </div>
         <button
@@ -274,7 +275,7 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
                 {page.items.map((item, idx) => (
                   <div key={idx}>
                     {item.type === 'section' ? (
-                      <div className="mb-4">
+                      <div className="mb-3">
                         <div className="pb-1 border-b-2 flex justify-between items-end" style={{ borderColor: '#dc2626' }}>
                           <h3 className="font-bold text-lg uppercase tracking-wider" style={{ color: '#dc2626' }}>{item.data}</h3>
                           <span className="font-bold text-sm mb-1" style={{ color: '#dc2626' }}>({item.points} pts)</span>
@@ -289,8 +290,8 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
 
               {/* Pied de page (1cm) */}
               <div className="mt-auto border-t border-slate-100 flex justify-between items-center text-[10px] text-slate-400 font-medium" style={{ height: `${FOOTER_HEIGHT}px`, flexShrink: 0 }}>
-                <span className="uppercase tracking-widest truncate max-w-[70%]">{evaluation.title}</span>
-                <span>Page {page.pageNumber} / {pages.length}</span>
+                <span className="uppercase tracking-widest truncate max-w-[70%] font-bold">{evaluation.title}</span>
+                <span className="font-bold">Page {page.pageNumber} / {pages.length}</span>
               </div>
             </div>
           </div>
