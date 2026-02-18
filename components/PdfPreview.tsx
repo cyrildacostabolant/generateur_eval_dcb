@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { Evaluation, Category, Question } from '../types';
 import { ArrowLeft, Printer } from 'lucide-react';
@@ -36,7 +37,7 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
   const FOOTER_HEIGHT = 38; // 10mm (1cm)
   const HEADER_HEIGHT_P1 = 205; // En-tête page 1 compacté
   
-  // Buffer de sécurité minimal pour coller au pied de page
+  // Buffer de sécurité minimal
   const SAFETY_BUFFER = 5; 
 
   const CONTENT_HEIGHT_P1 = PAGE_HEIGHT - (PAGE_PADDING_PX * 2) - HEADER_HEIGHT_P1 - FOOTER_HEIGHT - SAFETY_BUFFER;
@@ -82,33 +83,6 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
       let maxPageHeight = CONTENT_HEIGHT_P1;
       const elements = Array.from(measureContainerRef.current!.children) as HTMLElement[];
       
-      const calculateQuestionMetrics = (el: HTMLElement) => {
-        const qTextEl = el.querySelector('.measure-question-text') as HTMLElement;
-        const qTextHeight = qTextEl ? qTextEl.offsetHeight : 0;
-        const tAnswerEl = el.querySelector('.measure-teacher-answer') as HTMLElement;
-        const tAnswerHeight = tAnswerEl ? tAnswerEl.offsetHeight : 0;
-        
-        // Calcul identique à l'affichage réel
-        const linesCount = Math.ceil(tAnswerHeight / 30); 
-        const calculatedDottedHeight = Math.max(1, linesCount) * 30;
-
-        const wrapperMargin = 12; // mb-3 (12px)
-        const internalGap = 8;    // mb-2 (8px)
-
-        let finalHeight = 0;
-        if (mode === 'teacher') {
-          finalHeight = el.offsetHeight + wrapperMargin; 
-        } else {
-          const isStudentPrompt = el.dataset.hasPrompt === 'true';
-          if (isStudentPrompt) {
-               finalHeight = el.offsetHeight + wrapperMargin;
-          } else {
-              finalHeight = qTextHeight + internalGap + calculatedDottedHeight + wrapperMargin;
-          }
-        }
-        return { finalHeight, calculatedDottedHeight };
-      };
-
       for (let i = 0; i < elements.length; i++) {
         const el = elements[i];
         const type = el.dataset.type as PageItemType;
@@ -126,12 +100,18 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
           const qId = el.dataset.id;
           itemData = evaluation.questions.find(q => q.id === qId);
           itemPoints = parseFloat(el.dataset.points || '0');
-          const metrics = calculateQuestionMetrics(el);
-          itemHeight = metrics.finalHeight;
-          dottedH = metrics.calculatedDottedHeight;
+          
+          // La mesure el.offsetHeight est maintenant fiable car le ghost 
+          // affiche le contenu exact correspondant au mode (student/teacher)
+          itemHeight = el.offsetHeight + 12; // mb-3
+
+          // On récupère la hauteur des lignes pointillées si elles ont été mesurées
+          const dottedEl = el.querySelector('.measure-dotted-area') as HTMLElement;
+          if (dottedEl) {
+            dottedH = dottedEl.offsetHeight;
+          }
         }
 
-        // Si l'élément dépasse la hauteur max disponible sur la page
         if (currentHeight + itemHeight > maxPageHeight && currentPageItems.length > 0) {
           computedPages.push({ pageNumber: pageIndex, items: currentPageItems });
           pageIndex++;
@@ -152,7 +132,7 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
 
       setPages(computedPages);
       setIsMeasuring(false);
-    }, 400);
+    }, 500);
 
     return () => clearTimeout(timer);
   }, [evaluation, mode]);
@@ -171,7 +151,7 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
       </div>
       <div className="pl-2">
         {mode === 'teacher' ? (
-          <div className="p-3 bg-green-50 border-l-4 border-green-500 text-green-900 editor-content rounded-r-lg measure-teacher-answer"
+          <div className="p-3 bg-green-50 border-l-4 border-green-500 text-green-900 editor-content rounded-r-lg"
                style={contentStyle} dangerouslySetInnerHTML={{ __html: q.teacher_answer }} />
         ) : (
           <>
@@ -194,7 +174,7 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
   return (
     <div className="fixed inset-0 bg-gray-900 bg-opacity-90 z-50 overflow-y-auto flex flex-col items-center pdf-modal-root">
       
-      {/* Conteneur de mesure fantôme - Doit être identique au rendu final */}
+      {/* Ghost measuring container - Doit être le REFLET EXACT du rendu final */}
       <div 
         ref={measureContainerRef} 
         className="absolute top-0 left-0 -z-50 opacity-0 pointer-events-none bg-white no-print"
@@ -210,17 +190,43 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
                   <span className="font-bold text-sm mb-1" style={{ color: '#dc2626' }}>({sectionPoints} pts)</span>
                 </div>
             </div>
-            {evaluation.questions.filter(q => (q.section_name || 'Autre') === section).map(q => (
-              <div key={q.id} data-type="question" data-id={q.id} data-has-prompt={!!q.student_prompt} data-points={q.points}>
-                <div className="mb-3 pl-2">
-                  <div className="mb-2 text-blue-900 font-bold measure-question-text" style={contentStyle}>{q.question_text}</div>
-                  <div className="pl-2">
-                       <div className="p-3 bg-green-50 border-l-4 border-green-500 text-green-900 editor-content rounded-r-lg measure-teacher-answer"
-                          style={contentStyle} dangerouslySetInnerHTML={{ __html: q.teacher_answer }} />
+            {evaluation.questions.filter(q => (q.section_name || 'Autre') === section).map(q => {
+               // Calcul du nombre de lignes pour le mode élève sans prompt
+               const tempDiv = document.createElement('div');
+               tempDiv.style.width = '190mm'; // Largeur estimée contenu
+               tempDiv.style.fontSize = '13pt';
+               tempDiv.style.lineHeight = '1.4';
+               tempDiv.innerHTML = q.teacher_answer;
+               document.body.appendChild(tempDiv);
+               const h = tempDiv.offsetHeight;
+               document.body.removeChild(tempDiv);
+               const lines = Math.max(1, Math.ceil(h / 30));
+               const dottedH = lines * 30;
+
+               return (
+                <div key={q.id} data-type="question" data-id={q.id} data-points={q.points}>
+                  <div className="mb-3 pl-2">
+                    <div className="mb-2 text-blue-900 font-bold measure-question-text" style={contentStyle}>{q.question_text}</div>
+                    <div className="pl-2">
+                      {mode === 'teacher' ? (
+                        <div className="p-3 bg-green-50 border-l-4 border-green-500 text-green-900 editor-content rounded-r-lg"
+                             style={contentStyle} dangerouslySetInnerHTML={{ __html: q.teacher_answer }} />
+                      ) : (
+                        <>
+                          {q.student_prompt ? (
+                             <div className="editor-content" style={contentStyle} dangerouslySetInnerHTML={{ __html: q.student_prompt }} />
+                          ) : (
+                            <div className="measure-dotted-area w-full flex flex-col" style={{ height: `${dottedH}px` }}>
+                               {/* Espace pour les lignes */}
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+               );
+            })}
           </React.Fragment>
         )})}
       </div>
@@ -232,7 +238,7 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
             <ArrowLeft size={20} /> <span className="hidden sm:inline font-bold">Retour</span>
           </button>
           <h2 className="font-black text-lg text-slate-800">
-            {isMeasuring ? 'Optimisation...' : mode === 'teacher' ? 'Version Professeur' : 'Version Élève'}
+            {isMeasuring ? 'Optimisation du remplissage...' : mode === 'teacher' ? 'Version Professeur' : 'Version Élève'}
           </h2>
         </div>
         <button
