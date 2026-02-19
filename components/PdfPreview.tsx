@@ -34,7 +34,7 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
   // --- CONSTANTES DE DIMENSIONS ---
   const PAGE_HEIGHT = 1123; // A4 à 96 DPI
   const PAGE_PADDING_PX = 38; // 10mm
-  const FOOTER_HEIGHT = 38; // 10mm (1cm)
+  const FOOTER_HEIGHT = 28; // ~7.5mm compact footer
   const HEADER_HEIGHT_P1 = 205; // En-tête page 1 compacté
   
   // Buffer de sécurité minimal
@@ -296,10 +296,13 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ evaluation, category, mode, onC
                 ))}
               </div>
 
-              {/* Pied de page (1cm) */}
-              <div className="mt-auto border-t border-slate-100 flex justify-between items-center text-[10px] text-slate-400 font-medium" style={{ height: `${FOOTER_HEIGHT}px`, flexShrink: 0 }}>
-                <span className="uppercase tracking-widest truncate max-w-[70%] font-bold">{evaluation.title}</span>
-                <span className="font-bold">Page {page.pageNumber} / {pages.length}</span>
+              {/* Pied de page compact */}
+              <div className="mt-auto border-t border-slate-100 flex justify-center items-center text-[9px] text-slate-400 font-medium" style={{ height: `${FOOTER_HEIGHT}px`, flexShrink: 0 }}>
+                <div className="flex items-center gap-3 uppercase tracking-widest font-bold">
+                  <span className="truncate max-w-[400px]">{evaluation.title}</span>
+                  <span className="text-slate-200">|</span>
+                  <span>Page {page.pageNumber} / {pages.length}</span>
+                </div>
               </div>
             </div>
           </div>
