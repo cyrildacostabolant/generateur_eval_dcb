@@ -240,7 +240,11 @@ const EvaluationEditor: React.FC<EvaluationEditorProps> = ({ evaluationId, onClo
           const isExpanded = expandedIds.has(q.id);
 
           return (
-            <div key={q.id} className={`bg-white rounded-2xl shadow-sm border transition-all animate-fade-in overflow-hidden ${isExpanded ? 'border-indigo-100 ring-4 ring-indigo-50/50' : 'border-slate-200 hover:border-indigo-200'}`}>
+            <div 
+              key={q.id} 
+              className={`bg-white rounded-2xl shadow-sm border transition-all animate-fade-in ${isExpanded ? 'border-indigo-100 ring-4 ring-indigo-50/50' : 'border-slate-200 hover:border-indigo-200 overflow-hidden'}`}
+              style={{ position: 'relative', zIndex: 100 - idx }}
+            >
               {/* Question Header - Compact */}
               <div 
                 className={`px-4 py-2 flex justify-between items-center gap-2 cursor-pointer ${isExpanded ? 'bg-slate-50/80 border-b border-indigo-50' : 'bg-white hover:bg-slate-50'}`}

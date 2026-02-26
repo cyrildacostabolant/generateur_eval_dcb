@@ -154,9 +154,9 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
   };
 
   return (
-    <div className={`border rounded-md overflow-hidden bg-white ${className}`}>
+    <div className={`border rounded-md bg-white relative ${className}`}>
       {/* Toolbar Standard */}
-      <div className="flex items-center gap-1 bg-gray-50 p-2 border-b flex-wrap relative">
+      <div className="flex items-center gap-1 bg-gray-50 p-2 border-b flex-wrap relative rounded-t-md">
         <button
           onClick={() => execCmd('bold')}
           className="p-1.5 hover:bg-gray-200 rounded text-gray-700"
@@ -260,30 +260,67 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
           </button>
           
           {showMathInput && (
-            <div className="flex items-center gap-1 bg-white border rounded shadow-sm animate-fade-in absolute left-10 top-10 z-10 p-2">
-              <input 
-                type="text" 
-                value={mathLatex}
-                onChange={(e) => setMathLatex(e.target.value)}
-                placeholder="Équation LaTeX (ex: E=mc^2)"
-                className="text-xs p-1 border rounded outline-none w-64 font-mono"
-                autoFocus
-                onKeyDown={(e) => e.key === 'Enter' && handleMathInsert()}
-              />
-              <button 
-                onClick={handleMathInsert}
-                className="p-1 hover:bg-green-100 text-green-600 rounded"
-                title="Valider"
-              >
-                <Check size={14} />
-              </button>
-              <button 
-                onClick={() => { setShowMathInput(false); setMathLatex(''); }}
-                className="p-1 hover:bg-red-100 text-red-500 rounded"
-                title="Annuler"
-              >
-                <X size={14} />
-              </button>
+            <div className="flex flex-col gap-3 bg-white border rounded-xl shadow-xl animate-fade-in absolute left-10 top-10 z-50 p-3 w-[380px]">
+              <div className="flex items-center gap-1">
+                <input 
+                  type="text" 
+                  value={mathLatex}
+                  onChange={(e) => setMathLatex(e.target.value)}
+                  placeholder="Équation LaTeX (ex: E=mc^2)"
+                  className="text-sm p-2 border rounded-lg outline-none flex-grow font-mono bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-100 transition-all"
+                  autoFocus
+                  onKeyDown={(e) => e.key === 'Enter' && handleMathInsert()}
+                />
+                <button 
+                  onClick={handleMathInsert}
+                  className="p-2 hover:bg-green-100 text-green-600 rounded-lg transition-colors"
+                  title="Valider"
+                >
+                  <Check size={18} />
+                </button>
+                <button 
+                  onClick={() => { setShowMathInput(false); setMathLatex(''); }}
+                  className="p-2 hover:bg-red-100 text-red-500 rounded-lg transition-colors"
+                  title="Annuler"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              
+              <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-[11px] text-slate-700 font-mono shadow-inner w-full">
+                <div className="font-bold text-slate-800 mb-2 font-sans text-xs border-b border-slate-200 pb-1.5 flex justify-between items-center">
+                  <span>Mémo LaTeX</span>
+                  <span className="text-[9px] text-slate-400 font-normal uppercase tracking-wider">Copier-coller</span>
+                </div>
+                <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 items-center">
+                  <span className="text-slate-500 font-sans text-right text-[10px] uppercase tracking-wider font-bold">Exposant</span> 
+                  <span className="select-all bg-white px-2 py-1 rounded border border-slate-200 cursor-text hover:border-indigo-300 transition-colors">x^&#123;n&#125;</span>
+                  
+                  <span className="text-slate-500 font-sans text-right text-[10px] uppercase tracking-wider font-bold">Indice</span> 
+                  <span className="select-all bg-white px-2 py-1 rounded border border-slate-200 cursor-text hover:border-indigo-300 transition-colors">x_&#123;i&#125;</span>
+                  
+                  <span className="text-slate-500 font-sans text-right text-[10px] uppercase tracking-wider font-bold">Fraction</span> 
+                  <span className="select-all bg-white px-2 py-1 rounded border border-slate-200 cursor-text hover:border-indigo-300 transition-colors">\frac&#123;X&#125;&#123;Y&#125;</span>
+                  
+                  <span className="text-slate-500 font-sans text-right text-[10px] uppercase tracking-wider font-bold">Racine</span> 
+                  <span className="select-all bg-white px-2 py-1 rounded border border-slate-200 cursor-text hover:border-indigo-300 transition-colors">\sqrt&#123;x&#125;</span>
+                  
+                  <span className="text-slate-500 font-sans text-right text-[10px] uppercase tracking-wider font-bold">Grecque</span> 
+                  <span className="select-all bg-white px-2 py-1 rounded border border-slate-200 cursor-text hover:border-indigo-300 transition-colors">\alpha, \beta</span>
+                  
+                  <span className="text-slate-500 font-sans text-right text-[10px] uppercase tracking-wider font-bold">Relation</span> 
+                  <span className="select-all bg-white px-2 py-1 rounded border border-slate-200 cursor-text leading-relaxed hover:border-indigo-300 transition-colors">\leq (&lt;=) - \geq (&gt;=)<br/>\neq (diff.) - \approx (env. =)</span>
+                  
+                  <span className="text-slate-500 font-sans text-right text-[10px] uppercase tracking-wider font-bold">Parenth.</span> 
+                  <span className="select-all bg-white px-2 py-1 rounded border border-slate-200 cursor-text hover:border-indigo-300 transition-colors">\left( \frac&#123;1&#125;&#123;2&#125; \right)</span>
+                  
+                  <span className="text-slate-500 font-sans text-right text-[10px] uppercase tracking-wider font-bold">Vecteur</span> 
+                  <span className="select-all bg-white px-2 py-1 rounded border border-slate-200 cursor-text hover:border-indigo-300 transition-colors">\overrightarrow&#123;AB&#125;</span>
+                  
+                  <span className="text-slate-500 font-sans text-right text-[10px] uppercase tracking-wider font-bold">Barre</span> 
+                  <span className="select-all bg-white px-2 py-1 rounded border border-slate-200 cursor-text hover:border-indigo-300 transition-colors">\overline&#123;AB&#125;</span>
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -326,7 +363,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
       {/* Editor Area */}
       <div
         ref={contentRef}
-        className="p-3 min-h-[100px] outline-none editor-content text-sm"
+        className="p-3 min-h-[100px] outline-none editor-content text-sm rounded-b-md"
         contentEditable
         onInput={handleInput}
         onBlur={handleInput}
